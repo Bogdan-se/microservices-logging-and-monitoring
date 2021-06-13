@@ -5,8 +5,17 @@ services:
     container_name: authors-service
     ports:
       - 8081:8081
+    environment:
+      - JAEGER_HOST=jaeger
+      - REDIS_HOST=redis
+      - ELASTIC_HOST=elasticsearch
+      - LOG_FILE=logs/authors.log
+    volumes:
+      - ./authors/logs:/var/www/node/logs
     depends_on:
       - redis
+      - jaeger
+      - elasticsearch
     networks:
       - mynet
   books:
@@ -14,25 +23,91 @@ services:
     container_name: books-service
     ports:
       - 8082:8082
+    environment:
+      - JAEGER_HOST=jaeger
+      - REDIS_HOST=redis
+      - AUTHORS_HOST=authors
+      - ELASTIC_HOST=elasticsearch
+      - LOG_FILE=logs/books.log
     networks:
       - mynet
     depends_on:
       - redis
+      - jaeger
+      - elasticsearch
   frontend:
     build: ./frontend
     container_name: frontend-service
     ports:
       - 8083:8083
+    environment:
+      - JAEGER_HOST=jaeger
+      - REDIS_HOST=redis
+      - AUTHORS_HOST=authors
+      - AUTHORS_PORT=8081
+      - BOOKS_HOST=books
+      - BOOKS_PORT=8082
+      - ELASTIC_HOST=elasticsearch
+      - LOG_FILE=logs/frontend.log
     networks:
       - mynet
     depends_on:
       - redis
+      - jaeger
+      - elasticsearch
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:7.13.1
+    container_name: elasticsearch
+    environment:
+      - discovery.type=single-node
+    ports:
+      - 9200:9200
+      - 9300:9300
+    networks:
+      - mynet
+  kibana:
+    image: docker.elastic.co/kibana/kibana:7.13.1
+    container_name: kibana
+    ports:
+      - 5601:5601
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+      ELASTICSEARCH_HOSTS: '["http://elasticsearch:9200"]'
+    networks:
+      - mynet
+  filebeat:
+    image: docker.elastic.co/beats/filebeat:7.13.1
+    container_name: filebeat
+    environment:
+      setup.kibana.host: http://kibana:5601
+      output.elasticsearch.hosts: '["http://elasticsearch:9200"]'
+    volumes:
+      - ./filebeat.docker.yml:/usr/share/filebeat/filebeat.yml:ro
+      - ./authors/logs:/var/log/authors
+      - ./books/logs:/var/log/books
+      - ./frontent/logs:/var/log/frontent
+    networks:
+      - mynet
 
   redis:
     image: redis:latest
     container_name: redis
     ports:
       - 6379:6379
+    networks:
+      - mynet
+  jaeger:
+    image: jaegertracing/all-in-one:1.22
+    container_name: jaeger
+    ports:
+      - 5775:5775/udp
+      - 6831:6831/udp
+      - 6832:6832/udp
+      - 5778:5778
+      - 16686:16686
+      - 14268:14268
+      - 14250:14250
+      - 9411:9411
     networks:
       - mynet
 

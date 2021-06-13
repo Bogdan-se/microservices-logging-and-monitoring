@@ -9,10 +9,17 @@ export class ApiService {
   private readonly booksApi: ApiClient;
 
   constructor() {
+    const authorsHost = process.env.AUTHORS_HOST || '127.0.0.1';
+    const authorsPort = process.env.AUTHORS_PORT || 8081;
     this.authorsApi = this.createApiClient(
-      'http://authors:8081/api/v1/authors',
+      `http://${authorsHost}:${authorsPort}/api/v1/authors`,
     );
-    this.booksApi = this.createApiClient('http://books:8082/api/v1/books');
+
+    const booksHost = process.env.BOOKS_HOST || '127.0.0.1';
+    const booksPort = process.env.BOOKS_PORT || 8082;
+    this.booksApi = this.createApiClient(
+      `http://${booksHost}:${booksPort}/api/v1/books`,
+    );
   }
 
   public getAuthorsApi(): ApiClient {
@@ -45,7 +52,8 @@ export class ApiService {
         url,
         data,
         config: AxiosRequestConfig & { public: boolean },
-      ): Promise<AxiosResponse> => axios.put(url, data, { ...config, baseURL }),
+      ): Promise<AxiosResponse> =>
+        axios.put(url, data, { ...config, baseURL }),
       delete: (
         url,
         data,
