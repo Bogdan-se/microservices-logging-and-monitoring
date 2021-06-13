@@ -2,14 +2,13 @@ import { Injectable } from '@nestjs/common';
 import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 import { ApiClient } from './api.interface';
-import { TraceContextProvider } from '../../common/tracer';
 
 @Injectable()
 export class ApiService {
   private readonly authorsApi: ApiClient;
   private readonly booksApi: ApiClient;
 
-  constructor(private traceContextProvider: TraceContextProvider) {
+  constructor() {
     const authorsHost = process.env.AUTHORS_HOST || '127.0.0.1';
     const authorsPort = process.env.AUTHORS_PORT || 8081;
     this.authorsApi = this.createApiClient(
@@ -31,50 +30,36 @@ export class ApiService {
     return this.booksApi;
   }
 
-  private addHeaders(config: AxiosRequestConfig & { public: boolean }) {
-    const traceHeaders = this.traceContextProvider.getHeaders();
-    const headers = config?.headers || {};
-
-    return {
-      ...config,
-      headers: {
-        ...headers,
-        ...traceHeaders,
-      },
-    };
-  }
-
   private createApiClient(baseURL = ''): ApiClient {
     return {
       get: (
         url,
         config: AxiosRequestConfig & { public: boolean },
-      ): Promise<AxiosResponse> =>
-        axios.get(url, { ...this.addHeaders(config), baseURL }),
+      ): Promise<AxiosResponse> => axios.get(url, { ...config, baseURL }),
       post: (
         url,
         data,
         config: AxiosRequestConfig & { public: boolean },
       ): Promise<AxiosResponse> =>
-        axios.post(url, data, { ...this.addHeaders(config), baseURL }),
+        axios.post(url, data, { ...config, baseURL }),
       patch: (
         url,
         data,
         config: AxiosRequestConfig & { public: boolean },
       ): Promise<AxiosResponse> =>
-        axios.patch(url, data, { ...this.addHeaders(config), baseURL }),
+        axios.patch(url, data, { ...config, baseURL }),
       put: (
         url,
         data,
         config: AxiosRequestConfig & { public: boolean },
       ): Promise<AxiosResponse> =>
-        axios.put(url, data, { ...this.addHeaders(config), baseURL }),
+        axios.put(url, data, { ...config, baseURL }),
       delete: (
         url,
         data,
         config: AxiosRequestConfig & { public: boolean },
       ): Promise<AxiosResponse> =>
-        axios.delete(url, { ...this.addHeaders(config), baseURL, data }),
+        axios.delete(url, { ...config, baseURL, data }),
     };
   }
 }

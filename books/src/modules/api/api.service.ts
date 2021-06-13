@@ -3,13 +3,15 @@ import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 
 import { ApiClient } from './api.interface';
 
+const AUTHORS_HOST = process.env.AUTHORS_HOST || '127.0.0.1';
+
 @Injectable()
 export class ApiService {
   private readonly authorsApi: ApiClient;
 
   constructor() {
     this.authorsApi = this.createApiClient(
-      'http://authors:8081/api/v1/authors',
+      `http://${AUTHORS_HOST}:8081/api/v1/authors`,
     );
   }
 
